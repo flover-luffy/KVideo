@@ -24,6 +24,7 @@ export function DesktopControlsWrapper({ src, data, actions, logic, refs }: Desk
         isPiPSupported,
         isAirPlaySupported,
         isCastAvailable,
+        resolution,
     } = data;
 
     const {
@@ -76,6 +77,7 @@ export function DesktopControlsWrapper({ src, data, actions, logic, refs }: Desk
             onProgressMouseDown={handleProgressMouseDown}
             onProgressTouchStart={handleProgressTouchStart}
             formatTime={formatTime}
+            resolution={resolution}
         />
     );
 }

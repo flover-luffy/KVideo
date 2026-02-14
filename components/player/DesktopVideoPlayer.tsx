@@ -69,7 +69,7 @@ export function DesktopVideoPlayer({
   const shouldForceLandscape = data.isFullscreen && fullscreenType === 'window' && isIOS && !isLandscape;
 
   // Initialize HLS Player
-  useHlsPlayer({
+  const hlsRef = useHlsPlayer({
     videoRef: refs.videoRef,
     src,
     autoPlay: shouldAutoPlay
@@ -91,7 +91,65 @@ export function DesktopVideoPlayer({
     setIsLoading,
     setCurrentTime,
     setDuration,
+    setResolution,
   } = actions;
+
+  // Detect video resolution
+  const getResolutionLabel = React.useCallback((height: number): string => {
+    if (height >= 2160) return '4K';
+    if (height >= 1440) return '2K';
+    if (height >= 1080) return '1080P';
+    if (height >= 720) return '720P';
+    if (height >= 480) return '480P';
+    if (height >= 360) return '360P';
+    return `${height}P`;
+  }, []);
+
+  // Update resolution when video metadata loads or HLS level changes
+  React.useEffect(() => {
+    const video = refs.videoRef.current;
+    const hls = hlsRef.current;
+
+    const updateResolution = () => {
+      // Priority 1: HLS.js current level
+      if (hls && hls.currentLevel >= 0 && hls.levels?.[hls.currentLevel]) {
+        const level = hls.levels[hls.currentLevel];
+        if (level.height) {
+          setResolution(getResolutionLabel(level.height));
+          return;
+        }
+      }
+      // Priority 2: video element
+      if (video && video.videoHeight > 0) {
+        setResolution(getResolutionLabel(video.videoHeight));
+      }
+    };
+
+    // Listen for video loadeddata
+    if (video) {
+      video.addEventListener('loadeddata', updateResolution);
+      video.addEventListener('resize', updateResolution);
+    }
+
+    // Listen for HLS level switch
+    let hlsLevelHandler: (() => void) | null = null;
+    if (hls) {
+      const Hls = require('hls.js').default;
+      hlsLevelHandler = () => updateResolution();
+      hls.on(Hls.Events.LEVEL_SWITCHED, hlsLevelHandler);
+    }
+
+    return () => {
+      if (video) {
+        video.removeEventListener('loadeddata', updateResolution);
+        video.removeEventListener('resize', updateResolution);
+      }
+      if (hls && hlsLevelHandler) {
+        const Hls = require('hls.js').default;
+        hls.off(Hls.Events.LEVEL_SWITCHED, hlsLevelHandler);
+      }
+    };
+  }, [src, refs.videoRef, hlsRef, setResolution, getResolutionLabel]);
 
   // Reset loading state and show spinner when source changes
   React.useEffect(() => {

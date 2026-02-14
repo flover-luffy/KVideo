@@ -15,6 +15,7 @@ interface DesktopLeftControlsProps {
     onVolumeChange: (e: React.MouseEvent<HTMLDivElement>) => void;
     onVolumeMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
     formatTime: (seconds: number) => string;
+    resolution?: string | null;
 }
 
 export function DesktopLeftControls({
@@ -29,7 +30,8 @@ export function DesktopLeftControls({
     onToggleMute,
     onVolumeChange,
     onVolumeMouseDown,
-    formatTime
+    formatTime,
+    resolution
 }: DesktopLeftControlsProps) {
     return (
         <div className="flex items-center gap-3">
@@ -57,6 +59,13 @@ export function DesktopLeftControls({
             <span className="text-white text-sm font-medium tabular-nums">
                 {formatTime(currentTime)} / {formatTime(duration)}
             </span>
+
+            {/* Resolution Badge */}
+            {resolution && (
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold leading-none bg-white/15 text-white/80 backdrop-blur-sm">
+                    {resolution}
+                </span>
+            )}
         </div>
     );
 }

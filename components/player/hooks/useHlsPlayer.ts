@@ -333,4 +333,6 @@ export function useHlsPlayer({
             extraBlobs.forEach(url => URL.revokeObjectURL(url));
         };
     }, [src, videoRef, autoPlay, onAutoPlayPrevented, onError, isAdFilterEnabled, adFilterMode, adKeywords]);
+
+    return hlsRef;
 }
