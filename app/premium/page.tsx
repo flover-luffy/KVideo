@@ -28,7 +28,7 @@ function PremiumHomePage() {
             <Navbar onReset={handleReset} isPremiumMode={true} />
 
             {/* Search Form - Separate from navbar */}
-            <div className="max-w-6xl mx-auto px-4 mt-2 mb-4 relative" style={{
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 mt-2 mb-4 relative" style={{
                 transform: 'translate3d(0, 0, 0)',
                 zIndex: 1000
             }}>
@@ -45,7 +45,7 @@ function PremiumHomePage() {
             </div>
 
             {/* Main Content */}
-            <main className="max-w-6xl mx-auto px-4 pb-20">
+            <main className="max-w-[1400px] mx-auto px-4 sm:px-6 pb-20">
                 {/* Results Section */}
                 {(results.length >= 1 || (!loading && results.length > 0)) && (
                     <SearchResults

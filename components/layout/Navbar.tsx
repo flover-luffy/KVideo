@@ -16,7 +16,7 @@ export function Navbar({ onReset, isPremiumMode = false }: NavbarProps) {
             transform: 'translate3d(0, 0, 0)',
             willChange: 'transform'
         }}>
-            <div className="max-w-6xl mx-auto px-4">
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
                 <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] shadow-[var(--shadow-sm)] px-4 py-2.5 rounded-2xl" style={{
                     transform: 'translate3d(0, 0, 0)'
                 }}>
