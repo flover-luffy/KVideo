@@ -144,12 +144,15 @@ function PlayerContent() {
     }
   }, [videoData, currentEpisode, isReversed, handleEpisodeClick]);
 
+  const hasMultipleSources = groupedSources.length > 1;
+  const hasEpisodes = videoData?.episodes && videoData.episodes.length > 1;
+
   return (
     <div className="min-h-screen bg-[var(--bg-color)]">
       {/* Glass Navbar */}
       <PlayerNavbar isPremium={isPremium} />
 
-      <main className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6 pb-20">
+      <main className="max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6 pb-20">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-[var(--accent-color)] border-t-transparent mb-4"></div>
@@ -162,7 +165,7 @@ function PlayerContent() {
             onRetry={fetchVideoDetails}
           />
         ) : (
-          <div className="space-y-3">
+          <>
             {/* 1. Video Player - Full Width */}
             <VideoPlayer
               playUrl={playUrl}
@@ -176,61 +179,101 @@ function PlayerContent() {
             />
 
             {/* 2. Title Bar + Action Buttons */}
-            <VideoTitleBar
-              videoData={videoData}
-              source={source}
-              title={title}
-            >
-              {/* Favorite Button inline */}
-              {videoData && videoId && (
-                <FavoriteButton
-                  videoId={videoId}
-                  source={source}
-                  title={videoData.vod_name || title || '未知视频'}
-                  poster={videoData.vod_pic}
-                  type={videoData.type_name}
-                  year={videoData.vod_year}
-                  size={20}
-                  isPremium={isPremium}
+            <div className="mt-3">
+              <VideoTitleBar
+                videoData={videoData}
+                source={source}
+                title={title}
+              >
+                {/* Favorite Button inline */}
+                {videoData && videoId && (
+                  <FavoriteButton
+                    videoId={videoId}
+                    source={source}
+                    title={videoData.vod_name || title || '未知视频'}
+                    poster={videoData.vod_pic}
+                    type={videoData.type_name}
+                    year={videoData.vod_year}
+                    size={20}
+                    isPremium={isPremium}
+                  />
+                )}
+              </VideoTitleBar>
+            </div>
+
+            {/* 3. Two-column layout on desktop: Episodes + Source/Description */}
+            <div className="mt-3 grid grid-cols-1 lg:grid-cols-3 gap-3">
+              {/* Left: Episode List (takes 2/3) */}
+              <div className={hasEpisodes ? 'lg:col-span-2' : 'lg:col-span-3'}>
+                <EpisodeList
+                  episodes={videoData?.episodes || null}
+                  currentEpisode={currentEpisode}
+                  isReversed={isReversed}
+                  onEpisodeClick={handleEpisodeClick}
+                  onToggleReverse={handleToggleReverse}
                 />
+              </div>
+
+              {/* Right: Source Selector + Description (takes 1/3) */}
+              {hasEpisodes && (
+                <div className="space-y-3">
+                  {/* Source Selector */}
+                  {hasMultipleSources && (
+                    <SourceSelector
+                      sources={groupedSources}
+                      currentSource={currentSourceId || source || ''}
+                      onSourceChange={(newSource) => {
+                        const params = new URLSearchParams();
+                        params.set('id', String(newSource.id));
+                        params.set('source', newSource.source);
+                        params.set('title', title || '');
+                        if (groupedSourcesParam) {
+                          params.set('groupedSources', groupedSourcesParam);
+                        }
+                        setCurrentSourceId(newSource.source);
+                        router.replace(`/player?${params.toString()}`, { scroll: false });
+                      }}
+                    />
+                  )}
+
+                  {/* Description */}
+                  <VideoDescription
+                    videoData={videoData}
+                    source={source}
+                    title={title}
+                  />
+                </div>
               )}
-            </VideoTitleBar>
+            </div>
 
-            {/* 3. Source Selector - Inline pills (only when multiple sources) */}
-            {groupedSources.length > 1 && (
-              <SourceSelector
-                sources={groupedSources}
-                currentSource={currentSourceId || source || ''}
-                onSourceChange={(newSource) => {
-                  const params = new URLSearchParams();
-                  params.set('id', String(newSource.id));
-                  params.set('source', newSource.source);
-                  params.set('title', title || '');
-                  if (groupedSourcesParam) {
-                    params.set('groupedSources', groupedSourcesParam);
-                  }
-                  setCurrentSourceId(newSource.source);
-                  router.replace(`/player?${params.toString()}`, { scroll: false });
-                }}
-              />
+            {/* Fallback: Show source + description below if single episode */}
+            {!hasEpisodes && (
+              <div className="mt-3 space-y-3">
+                {hasMultipleSources && (
+                  <SourceSelector
+                    sources={groupedSources}
+                    currentSource={currentSourceId || source || ''}
+                    onSourceChange={(newSource) => {
+                      const params = new URLSearchParams();
+                      params.set('id', String(newSource.id));
+                      params.set('source', newSource.source);
+                      params.set('title', title || '');
+                      if (groupedSourcesParam) {
+                        params.set('groupedSources', groupedSourcesParam);
+                      }
+                      setCurrentSourceId(newSource.source);
+                      router.replace(`/player?${params.toString()}`, { scroll: false });
+                    }}
+                  />
+                )}
+                <VideoDescription
+                  videoData={videoData}
+                  source={source}
+                  title={title}
+                />
+              </div>
             )}
-
-            {/* 4. Episode List - Horizontal Grid */}
-            <EpisodeList
-              episodes={videoData?.episodes || null}
-              currentEpisode={currentEpisode}
-              isReversed={isReversed}
-              onEpisodeClick={handleEpisodeClick}
-              onToggleReverse={handleToggleReverse}
-            />
-
-            {/* 5. Description - Collapsible */}
-            <VideoDescription
-              videoData={videoData}
-              source={source}
-              title={title}
-            />
-          </div>
+          </>
         )}
       </main>
 

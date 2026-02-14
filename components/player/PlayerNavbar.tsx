@@ -10,7 +10,7 @@ export function PlayerNavbar({ isPremium }: { isPremium?: boolean }) {
 
     return (
         <nav className="sticky top-0 z-50 pt-3 pb-1" style={{ transform: 'translateZ(0)' }}>
-            <div className="max-w-5xl mx-auto px-3 sm:px-4">
+            <div className="max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6">
                 <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] shadow-[var(--shadow-sm)] px-3 py-2 rounded-2xl" style={{
                     transform: 'translate3d(0, 0, 0)'
                 }}>
