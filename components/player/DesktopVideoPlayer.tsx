@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Hls from 'hls.js';
 import { useDesktopPlayerState } from './hooks/useDesktopPlayerState';
 import { useDesktopPlayerLogic } from './hooks/useDesktopPlayerLogic';
 import { useHlsPlayer } from './hooks/useHlsPlayer';
@@ -134,7 +135,6 @@ export function DesktopVideoPlayer({
     // Listen for HLS level switch
     let hlsLevelHandler: (() => void) | null = null;
     if (hls) {
-      const Hls = require('hls.js').default;
       hlsLevelHandler = () => updateResolution();
       hls.on(Hls.Events.LEVEL_SWITCHED, hlsLevelHandler);
     }
@@ -145,7 +145,6 @@ export function DesktopVideoPlayer({
         video.removeEventListener('resize', updateResolution);
       }
       if (hls && hlsLevelHandler) {
-        const Hls = require('hls.js').default;
         hls.off(Hls.Events.LEVEL_SWITCHED, hlsLevelHandler);
       }
     };
