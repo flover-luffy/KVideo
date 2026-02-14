@@ -5,7 +5,6 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Icons } from '@/components/ui/Icon';
 import { useKeyboardNavigation } from '@/lib/hooks/useKeyboardNavigation';
-import { settingsStore } from '@/lib/store/settings-store';
 
 interface Episode {
   name?: string;
@@ -20,6 +19,8 @@ interface EpisodeListProps {
   onToggleReverse?: (reversed: boolean) => void;
 }
 
+const INITIAL_VISIBLE_COUNT = 30; // Show first 30 episodes by default
+
 export function EpisodeList({
   episodes,
   currentEpisode,
@@ -29,6 +30,7 @@ export function EpisodeList({
 }: EpisodeListProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Memoized display episodes - reversed if toggle is on
   const displayEpisodes = useMemo(() => {
@@ -47,6 +49,17 @@ export function EpisodeList({
     if (!episodes || !isReversed) return originalIndex;
     return episodes.length - 1 - originalIndex;
   }, [episodes, isReversed]);
+
+  // Determine visible episodes
+  const visibleEpisodes = useMemo(() => {
+    if (!displayEpisodes) return null;
+    if (isExpanded || displayEpisodes.length <= INITIAL_VISIBLE_COUNT) {
+      return displayEpisodes;
+    }
+    return displayEpisodes.slice(0, INITIAL_VISIBLE_COUNT);
+  }, [displayEpisodes, isExpanded]);
+
+  const hasMore = displayEpisodes && displayEpisodes.length > INITIAL_VISIBLE_COUNT;
 
   // Keyboard navigation
   useKeyboardNavigation({
@@ -76,41 +89,49 @@ export function EpisodeList({
 
   return (
     <Card hover={false}>
-      <h3 className="text-lg sm:text-xl font-bold text-[var(--text-color)] mb-4 flex items-center gap-2">
-        <Icons.List size={20} className="sm:w-6 sm:h-6" />
-        <span>选集</span>
-        {episodes && (
-          <Badge variant="primary">{episodes.length}</Badge>
-        )}
-        {/* Reverse order toggle button - only show when more than 1 episode */}
-        {showReverseToggle && (
-          <button
-            onClick={() => onToggleReverse?.(!isReversed)}
-            className={`
-              ml-auto p-1.5 rounded-[var(--radius-2xl)] transition-all duration-200
-              ${isReversed
-                ? 'bg-[var(--accent-color)] text-white'
-                : 'bg-[var(--glass-bg)] text-[var(--text-color-secondary)] hover:bg-[var(--glass-hover)] border border-[var(--glass-border)]'
-              }
-            `}
-            aria-label={isReversed ? '恢复正序' : '倒序排列'}
-            title={isReversed ? '恢复正序' : '倒序排列'}
-          >
-            <Icons.ArrowUpDown size={16} />
-          </button>
-        )}
-      </h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-base sm:text-lg font-bold text-[var(--text-color)] flex items-center gap-2">
+          <Icons.List size={18} className="sm:w-5 sm:h-5" />
+          <span>选集</span>
+          {episodes && (
+            <Badge variant="primary">{episodes.length}</Badge>
+          )}
+        </h3>
+        <div className="flex items-center gap-2">
+          {/* Reverse order toggle button */}
+          {showReverseToggle && (
+            <button
+              onClick={() => onToggleReverse?.(!isReversed)}
+              className={`
+                p-1.5 rounded-[var(--radius-2xl)] transition-all duration-200
+                ${isReversed
+                  ? 'bg-[var(--accent-color)] text-white'
+                  : 'bg-[var(--glass-bg)] text-[var(--text-color-secondary)] hover:bg-[var(--glass-hover)] border border-[var(--glass-border)]'
+                }
+              `}
+              aria-label={isReversed ? '恢复正序' : '倒序排列'}
+              title={isReversed ? '恢复正序' : '倒序排列'}
+            >
+              <Icons.ArrowUpDown size={16} />
+            </button>
+          )}
+        </div>
+      </div>
 
       <div
         ref={listRef}
-        className="max-h-[400px] sm:max-h-[600px] overflow-y-auto space-y-2 pr-2"
+        className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2"
         role="radiogroup"
         aria-label="剧集选择"
       >
-        {displayEpisodes && displayEpisodes.length > 0 ? (
-          displayEpisodes.map((episode, displayIndex) => {
+        {visibleEpisodes && visibleEpisodes.length > 0 ? (
+          visibleEpisodes.map((episode, displayIndex) => {
             const originalIndex = getOriginalIndex(displayIndex);
             const isCurrentEpisode = currentEpisode === originalIndex;
+            // Determine display label
+            const label = episode.name || `第${originalIndex + 1}集`;
+            // Use shorter label for grid buttons
+            const shortLabel = label.length > 6 ? label.slice(0, 5) + '…' : label;
 
             return (
               <button
@@ -127,34 +148,49 @@ export function EpisodeList({
                 role="radio"
                 aria-checked={isCurrentEpisode}
                 aria-current={isCurrentEpisode ? 'true' : undefined}
-                aria-label={`${episode.name || `第 ${originalIndex + 1} 集`}${isCurrentEpisode ? '，当前播放' : ''}`}
+                aria-label={`${label}${isCurrentEpisode ? '，当前播放' : ''}`}
+                title={label}
                 className={`
-                  w-full px-3 py-2 sm:px-4 sm:py-3 rounded-[var(--radius-2xl)] text-left transition-[var(--transition-fluid)] cursor-pointer
+                  px-2 py-2.5 rounded-xl text-center transition-all duration-200 cursor-pointer
+                  text-xs sm:text-sm font-medium truncate
                   ${isCurrentEpisode
-                    ? 'bg-[var(--accent-color)] text-white shadow-[0_4px_12px_color-mix(in_srgb,var(--accent-color)_50%,transparent)] brightness-110'
-                    : 'bg-[var(--glass-bg)] hover:bg-[var(--glass-hover)] text-[var(--text-color)] border border-[var(--glass-border)]'
+                    ? 'bg-[var(--accent-color)] text-white shadow-[0_2px_8px_color-mix(in_srgb,var(--accent-color)_40%,transparent)] ring-1 ring-[var(--accent-color)]'
+                    : 'bg-[var(--glass-bg)] hover:bg-[var(--glass-hover)] text-[var(--text-color)] border border-[var(--glass-border)] hover:border-[var(--accent-color)]/30'
                   }
-                  focus-visible:ring-2 focus-visible:ring-[var(--accent-color)] focus-visible:ring-offset-2
+                  focus-visible:ring-2 focus-visible:ring-[var(--accent-color)] focus-visible:ring-offset-1
                 `}
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm sm:text-base">
-                    {episode.name || `第 ${originalIndex + 1} 集`}
-                  </span>
-                  {isCurrentEpisode && (
-                    <Icons.Play size={16} />
-                  )}
-                </div>
+                {shortLabel}
               </button>
             );
           })
         ) : (
-          <div className="text-center py-8 text-[var(--text-secondary)]">
-            <Icons.Inbox size={48} className="text-[var(--text-color-secondary)] mx-auto mb-2" />
-            <p>暂无剧集信息</p>
+          <div className="col-span-full text-center py-8 text-[var(--text-secondary)]">
+            <Icons.Inbox size={40} className="text-[var(--text-color-secondary)] mx-auto mb-2" />
+            <p className="text-sm">暂无剧集信息</p>
           </div>
         )}
       </div>
+
+      {/* Expand / Collapse button */}
+      {hasMore && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mt-3 w-full py-2 text-sm font-medium text-[var(--accent-color)] hover:text-[var(--text-color)] bg-[var(--glass-bg)] hover:bg-[var(--glass-hover)] border border-[var(--glass-border)] rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer"
+        >
+          {isExpanded ? (
+            <>
+              <Icons.ChevronUp size={16} />
+              收起 ({displayEpisodes!.length} 集)
+            </>
+          ) : (
+            <>
+              <Icons.ChevronDown size={16} />
+              展开全部 ({displayEpisodes!.length} 集)
+            </>
+          )}
+        </button>
+      )}
     </Card>
   );
 }

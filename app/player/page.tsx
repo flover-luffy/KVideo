@@ -2,9 +2,8 @@
 
 import { Suspense, useEffect, useMemo, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
 import { VideoPlayer } from '@/components/player/VideoPlayer';
-import { VideoMetadata } from '@/components/player/VideoMetadata';
+import { VideoTitleBar, VideoDescription } from '@/components/player/VideoMetadata';
 import { EpisodeList } from '@/components/player/EpisodeList';
 import { PlayerError } from '@/components/player/PlayerError';
 import { SourceSelector, SourceInfo } from '@/components/player/SourceSelector';
@@ -14,8 +13,6 @@ import { FavoritesSidebar } from '@/components/favorites/FavoritesSidebar';
 import { FavoriteButton } from '@/components/favorites/FavoriteButton';
 import { PlayerNavbar } from '@/components/player/PlayerNavbar';
 import { settingsStore } from '@/lib/store/settings-store';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
-import Image from 'next/image';
 
 function PlayerContent() {
   const searchParams = useSearchParams();
@@ -33,9 +30,6 @@ function PlayerContent() {
   const [isReversed, setIsReversed] = useState(() =>
     typeof window !== 'undefined' ? settingsStore.getSettings().episodeReverseOrder : false
   );
-
-  // Mobile tab state
-  const [activeTab, setActiveTab] = useState<'episodes' | 'info' | 'sources'>('episodes');
 
   // Sync with store changes if any (though usually it's one-way from UI to store)
   useEffect(() => {
@@ -90,7 +84,7 @@ function PlayerContent() {
   useEffect(() => {
     if (videoData && playUrl && videoId) {
       // Map episodes to include index
-      const mappedEpisodes = videoData.episodes?.map((ep, idx) => ({
+      const mappedEpisodes = videoData.episodes?.map((ep: any, idx: number) => ({
         name: ep.name || `第${idx + 1}集`,
         url: ep.url,
         index: idx,
@@ -146,16 +140,16 @@ function PlayerContent() {
 
     const nextEpisode = episodes[nextIndex];
     if (nextEpisode) {
-      handleEpisodeClick(nextEpisode, nextIndex); // handleEpisodeClick relies on state setters, which are stable
+      handleEpisodeClick(nextEpisode, nextIndex);
     }
-  }, [videoData, currentEpisode, isReversed, router, searchParams]); // handleEpisodeClick is not memoized, but uses stable hooks setters. wait, handleEpisodeClick is inline too!
+  }, [videoData, currentEpisode, isReversed, handleEpisodeClick]);
 
   return (
     <div className="min-h-screen bg-[var(--bg-color)]">
       {/* Glass Navbar */}
       <PlayerNavbar isPremium={isPremium} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+      <main className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 pb-20">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-[var(--accent-color)] border-t-transparent mb-4"></div>
@@ -168,107 +162,74 @@ function PlayerContent() {
             onRetry={fetchVideoDetails}
           />
         ) : (
-          <div className="grid lg:grid-cols-3 gap-6">
-            {/* Video Player Section */}
-            <div className="lg:col-span-2 space-y-6">
-              <VideoPlayer
-                playUrl={playUrl}
-                videoId={videoId || undefined}
-                currentEpisode={currentEpisode}
-                onBack={() => router.back()}
-                totalEpisodes={videoData?.episodes?.length || 0}
-                onNextEpisode={handleNextEpisode}
-                isReversed={isReversed}
-                isPremium={isPremium}
-              />
-              <div className="hidden lg:block">
-                <VideoMetadata
-                  videoData={videoData}
-                  source={source}
-                  title={title}
-                />
-              </div>
+          <div className="space-y-3">
+            {/* 1. Video Player - Full Width */}
+            <VideoPlayer
+              playUrl={playUrl}
+              videoId={videoId || undefined}
+              currentEpisode={currentEpisode}
+              onBack={() => router.back()}
+              totalEpisodes={videoData?.episodes?.length || 0}
+              onNextEpisode={handleNextEpisode}
+              isReversed={isReversed}
+              isPremium={isPremium}
+            />
 
-              {/* Favorite Button for current video */}
+            {/* 2. Title Bar + Action Buttons */}
+            <VideoTitleBar
+              videoData={videoData}
+              source={source}
+              title={title}
+            >
+              {/* Favorite Button inline */}
               {videoData && videoId && (
-                <div className="flex items-center gap-3 mt-4">
-                  <FavoriteButton
-                    videoId={videoId}
-                    source={source}
-                    title={videoData.vod_name || title || '未知视频'}
-                    poster={videoData.vod_pic}
-                    type={videoData.type_name}
-                    year={videoData.vod_year}
-                    size={20}
-                    isPremium={isPremium}
-                  />
-                  <span className="text-sm text-[var(--text-color-secondary)]">
-                    收藏这个视频
-                  </span>
-                </div>
+                <FavoriteButton
+                  videoId={videoId}
+                  source={source}
+                  title={videoData.vod_name || title || '未知视频'}
+                  poster={videoData.vod_pic}
+                  type={videoData.type_name}
+                  year={videoData.vod_year}
+                  size={20}
+                  isPremium={isPremium}
+                />
               )}
-            </div>
+            </VideoTitleBar>
 
-            {/* Sidebar with sticky wrapper */}
-            <div className="lg:col-span-1">
-              <div className="lg:sticky lg:top-32 space-y-6">
-                {/* Mobile Tabs */}
-                {groupedSources.length > 0 && (
-                  <SegmentedControl
-                    options={[
-                      { label: '选集', value: 'episodes' },
-                      { label: '简介', value: 'info' },
-                      ...(groupedSources.length > 1 ? [{ label: '来源', value: 'sources' as const }] : []),
-                    ]}
-                    value={activeTab}
-                    onChange={setActiveTab}
-                    className="lg:hidden mb-4"
-                  />
-                )}
+            {/* 3. Source Selector - Inline pills (only when multiple sources) */}
+            {groupedSources.length > 1 && (
+              <SourceSelector
+                sources={groupedSources}
+                currentSource={currentSourceId || source || ''}
+                onSourceChange={(newSource) => {
+                  const params = new URLSearchParams();
+                  params.set('id', String(newSource.id));
+                  params.set('source', newSource.source);
+                  params.set('title', title || '');
+                  if (groupedSourcesParam) {
+                    params.set('groupedSources', groupedSourcesParam);
+                  }
+                  setCurrentSourceId(newSource.source);
+                  router.replace(`/player?${params.toString()}`, { scroll: false });
+                }}
+              />
+            )}
 
-                {/* Info Tab Content - Mobile Only */}
-                <div className={activeTab !== 'info' ? 'hidden' : 'block lg:hidden'}>
-                  <VideoMetadata
-                    videoData={videoData}
-                    source={source}
-                    title={title}
-                  />
-                </div>
+            {/* 4. Episode List - Horizontal Grid */}
+            <EpisodeList
+              episodes={videoData?.episodes || null}
+              currentEpisode={currentEpisode}
+              isReversed={isReversed}
+              onEpisodeClick={handleEpisodeClick}
+              onToggleReverse={handleToggleReverse}
+            />
 
-                {/* Episode List - Visible if desktop OR active mobile tab */}
-                <div className={activeTab !== 'episodes' ? 'hidden lg:block' : 'block'}>
-                  <EpisodeList
-                    episodes={videoData?.episodes || null}
-                    currentEpisode={currentEpisode}
-                    isReversed={isReversed}
-                    onEpisodeClick={handleEpisodeClick}
-                    onToggleReverse={handleToggleReverse}
-                  />
-                </div>
-
-                {/* Source Selector - Visible if (desktop AND grouped sources) OR (active mobile tab AND grouped sources) */}
-                {groupedSources.length > 0 && (
-                  <div className={activeTab !== 'sources' ? 'hidden lg:block' : 'block'}>
-                    <SourceSelector
-                      sources={groupedSources}
-                      currentSource={currentSourceId || source || ''}
-                      onSourceChange={(newSource) => {
-                        // Navigate to same video with different source
-                        const params = new URLSearchParams();
-                        params.set('id', String(newSource.id));
-                        params.set('source', newSource.source);
-                        params.set('title', title || '');
-                        if (groupedSourcesParam) {
-                          params.set('groupedSources', groupedSourcesParam);
-                        }
-                        setCurrentSourceId(newSource.source);
-                        router.replace(`/player?${params.toString()}`, { scroll: false });
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* 5. Description - Collapsible */}
+            <VideoDescription
+              videoData={videoData}
+              source={source}
+              title={title}
+            />
           </div>
         )}
       </main>
