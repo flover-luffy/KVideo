@@ -51,7 +51,7 @@ export function PopularFeatures({ onSearch }: PopularFeaturesProps) {
   return (
     <div className="animate-fade-in">
       {/* Content Type Toggle (Capsule Liquid Glass - Fixed & Centered) */}
-      <div className="mb-10 flex justify-center">
+      <div className="mb-4 flex justify-center">
         <div className="relative w-80 p-1 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-full grid grid-cols-2 backdrop-blur-2xl shadow-lg ring-1 ring-white/10 overflow-hidden">
           {/* Sliding Indicator */}
           <div

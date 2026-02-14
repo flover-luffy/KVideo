@@ -106,7 +106,7 @@ export function TagList({
         >
             <div
                 ref={scrollContainerRef}
-                className="mb-8 flex items-center gap-3 overflow-x-auto pb-3 pt-2 px-1 scrollbar-hide"
+                className="mb-4 flex items-center gap-3 overflow-x-auto pb-3 pt-2 px-1 scrollbar-hide"
             >
                 <SortableContext
                     items={tags.map((t) => t.id)}

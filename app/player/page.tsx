@@ -149,7 +149,7 @@ function PlayerContent() {
       {/* Glass Navbar */}
       <PlayerNavbar isPremium={isPremium} />
 
-      <main className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 pb-20">
+      <main className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6 pb-20">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-[var(--accent-color)] border-t-transparent mb-4"></div>
